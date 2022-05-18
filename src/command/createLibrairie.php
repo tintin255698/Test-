@@ -1,7 +1,5 @@
 <?php
 
-// /src/command/createLibrairie.php
-
 namespace App\command;
 
 use Symfony\Component\Console\Command\Command;
