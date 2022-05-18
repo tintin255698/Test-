@@ -52,11 +52,12 @@ class createLibrairie extends Command
 
         }
 
+        //Convert array en Json
     $json = json_encode($array);
 
+        //Read Json
     $parsed_json = json_decode($json);
 
-        // Returning the array
 
          //Prix
         $price1 = $this->price($parsed_json[0]->{'price'});
