@@ -126,12 +126,14 @@ class createLibrairie extends Command
 
     }
 
+    //Price
     public function price(string $number): array
     {
         $price = number_format($number,2);
         return [str_replace('.', ',', $price  )];
     }
 
+    //Status enable/disable
     public function status(string $number): string
     {
         if($number == 1){
@@ -142,15 +144,18 @@ class createLibrairie extends Command
         return $status;
     }
 
+    //Slug
     public function slug($urlString){
         return preg_replace('/[^A-Za-z0-9-]+/', '-', $urlString);
     }
 
+    //Description HTML
     public function description($description){
         $changeDesc = str_replace('\r', '<br/>', $description  );
         return explode("<br/>", $changeDesc);
     }
 
+    //Date
     public function createdAt($date){
         $timestamp = strtotime($date);
         return date("l, d-M-Y H:i:s T", $timestamp );
