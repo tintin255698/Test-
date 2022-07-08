@@ -2,14 +2,29 @@
 
 namespace App\command;
 
+use App\Manager\csv;
+use App\Manager\data;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-
 class createLibrairie extends Command
 {
+    private csv $csv;
+
+    private data $data;
+
+    private array $array = [];
+
+    public function __construct(csv $csv, data $data)
+    {
+        $this->csv = $csv;
+        $this->data = $data;
+        parent::__construct();
+    }
+
+    //Configuration
     protected function configure()
     {
         $this
@@ -18,146 +33,85 @@ class createLibrairie extends Command
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output, $enclosure = '"'): int
+    //Open, read and format CSV File in array
+    private function csv(): array
     {
-        // Let's get the content of the file and store it in the string
-        $csv_string = file_get_contents('https://recrutement.dnd.fr/products.csv', 'r+');
+        if(empty($this->array)) {
 
-        // Let's detect what is the delimiter of the CSV file
-        $delimiter = $this->detect_delimiter($csv_string);
+            //Your file
+            $file = 'https://recrutement.dnd.fr/products.csv';
 
-        // Get all the lines of the CSV string
-        $lines = explode("\n", $csv_string);
+            //Enclosure
+            $enclosure = '"';
 
-        // The first line of the CSV file is the headers that we will use as the keys
-        $head = str_getcsv(array_shift($lines),$delimiter,$enclosure);
+            // Let's get the content of the file and store it in the string
+            $csv_string = $this->csv->openCsv($file);
 
-        $array = array();
+            // Let's detect what is the delimiter of the CSV file
+            $delimiter = $this->csv->detectDelimiter($csv_string);
 
-        // For all the lines within the CSV
-        foreach ($lines as $line) {
+            // Get all the lines of the CSV string
+            $lines = $this->csv->lineCsv($csv_string);
 
-            // Sometimes CSV files have an empty line at the end, we try not to add it in the array
-            if(empty($line)) {
-                continue;
-            }
-
-            // Get the CSV data of the line
-            $csv = str_getcsv($line,$delimiter,$enclosure);
+            // The first line of the CSV file is the headers that we will use as the keys
+            $head = $this->csv->headerCsv($lines, $delimiter, $enclosure);
 
             // Combine the header and the lines data
-            $array[] = array_combine( $head, $csv );
+            $array = $this->csv->combineCsv($lines, $delimiter, $enclosure, $head);
+
+            unset($array[0]);
+
+            $this->array = $array;
 
         }
 
-        //Convert array en Json
-    $json = json_encode($array);
+        return $this->array;
+    }
 
-        //Read Json
-    $parsed_json = json_decode($json);
+    //Recupe and format enabled
+    private function isEnable($method = 'getStatus', $search = 'is_enabled')
+    {
+        return $this->data->search($method, $search, $this->csv());
+    }
 
+    //Recupe and format the date
+    private function date($method = 'getCreatedAt', $search = 'created_at')
+    {
+        return $this->data->search($method, $search, $this->csv());
+    }
 
-         //Prix
-        $price1 = $this->price($parsed_json[0]->{'price'});
-        $price2 = $this->price($parsed_json[1]->{'price'});
+    //Recupe and format the description
+    private function description($method = 'getDescription', $search = 'description')
+    {
+       return $this->data->search($method, $search, $this->csv());
+    }
 
-        //Status
-        $status1 = $this->status($parsed_json[0]->{'is_enabled'});
-        $status2 = $this->status($parsed_json[1]->{'is_enabled'});
+    //Recupe and format the slug
+    private function slug($method = 'getSlug', $search = 'title')
+    {
+         return $this->data->search($method, $search, $this->csv());
+    }
 
-        //Slug
-       $slug1 = strtolower($this->slug($parsed_json[0]->{'title'}));
-       $slug2 = strtolower($this->slug($parsed_json[1]->{'title'}));
+    //Recupe and format the price
+    private function price($method = 'getPrice', $search = 'price')
+    {
+        return $this->data->search($method, $search, $this->csv());
+    }
 
-       //Description
-        define('CR',"\n");
-        $description1 = $this->description($parsed_json[0]->{'description'});
-        $description2 = $this->description($parsed_json[1]->{'description'});
-
-
-        //CreatedAt
-        $createdAt1 = $this->createdAt($parsed_json[0]->{'created_at'});
-        $createdAt2 = $this->createdAt($parsed_json[1]->{'created_at'});
-
+    //Execution
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
         $table = new Table($output);
         $table
             ->setHeaders(['Sku', 'Status', 'Price', 'Description', 'Created At', 'Slug'])
             ->setRows([
-                [ $parsed_json[0]->{'sku'}, $status1, $price1['0'].$array[0]['currency'],$description1[0].CR.$description1[1],$createdAt1, $slug1 ],
-                [ $parsed_json[1]->{'sku'}, $status2, $price2['0'].$array[1]['currency'],$description2[0].CR.$description2[1],$createdAt2, $slug2 ],
+                [ $this->csv()[1]['sku'], $this->isEnable()[0], $this->price()['0'].$this->csv()[1]['currency'],$this->description()[0],$this->date()[0], $this->slug()[0] ],
+                [ $this->csv()[2]['sku'], $this->isEnable()[1], $this->price()['1'].$this->csv()[2]['currency'],$this->description()[1],$this->date()[1], $this->slug()[1] ],
             ])
         ;
         $table->render();
 
-
-        //Command for CRON frequency between 7h to 19h all the day with cron-tab
-        // */60 7-19 * * * php bin/console csv:import >/dev/null 2>&1
-
-
         return Command::SUCCESS;
     }
-
-    /**
-     *
-     * This function detects the delimiter inside the CSV file.
-     *
-     * It allows the function to work with different types of delimiters, ";", "," "\t", or "|"
-     *
-     *
-     *
-     * @param string $csv_string    The content of the CSV file
-     * @return string               The delimiter used in the CSV file
-     */
-   public function detect_delimiter(string $csv_string): string
-    {
-
-        // List of delimiters that we will check for
-        $delimiters = array(';' => 0,',' => 0,"\t" => 0,"|" => 0);
-
-        // For every delimiter, we count the number of time it can be found within the csv string
-        foreach ($delimiters as $delimiter => &$count) {
-            $count = substr_count($csv_string,$delimiter);
-        }
-
-        // The delimiter used is probably the one that has the more occurrence in the file
-        return array_search(max($delimiters), $delimiters);
-
-    }
-
-    //Price
-    public function price(string $number): array
-    {
-        $price = number_format($number,2);
-        return [str_replace('.', ',', $price  )];
-    }
-
-    //Status enable/disable
-    public function status(string $number): string
-    {
-        if($number == 1){
-           $status = 'Enable';
-        } else {
-            $status = 'Disable';
-        }
-        return $status;
-    }
-
-    //Slug
-    public function slug($urlString){
-        return preg_replace('/[^A-Za-z0-9-]+/', '-', $urlString);
-    }
-
-    //Description HTML
-    public function description($description){
-        $changeDesc = str_replace('\r', '<br/>', $description  );
-        return explode("<br/>", $changeDesc);
-    }
-
-    //Date
-    public function createdAt($date){
-        $timestamp = strtotime($date);
-        return date("l, d-M-Y H:i:s T", $timestamp );
-    }
-
 
 }
