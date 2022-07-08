@@ -4,7 +4,7 @@ namespace App\Manager;
 
 use http\Env\Response;
 
-class data
+class DataManager
 {
 //Price
     public function getPrice(string $number): string

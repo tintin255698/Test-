@@ -2,8 +2,8 @@
 
 namespace App\command;
 
-use App\Manager\csv;
-use App\Manager\data;
+use App\Manager\CsvManager;
+use App\Manager\DataManager;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -11,13 +11,13 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class createLibrairie extends Command
 {
-    private csv $csv;
+    private CsvManager $csv;
 
-    private data $data;
+    private DataManager $data;
 
     private array $array = [];
 
-    public function __construct(csv $csv, data $data)
+    public function __construct(CsvManager $csv, DataManager $data)
     {
         $this->csv = $csv;
         $this->data = $data;
@@ -28,8 +28,8 @@ class createLibrairie extends Command
     protected function configure()
     {
         $this
-            ->setName('csv:import')
-            ->setDescription('Imports the products CSV data file')
+            ->setName('csvManager:import')
+            ->setDescription('Imports the products CSV dataManager file')
         ;
     }
 
@@ -56,7 +56,7 @@ class createLibrairie extends Command
             // The first line of the CSV file is the headers that we will use as the keys
             $head = $this->csv->headerCsv($lines, $delimiter, $enclosure);
 
-            // Combine the header and the lines data
+            // Combine the header and the lines dataManager
             $array = $this->csv->combineCsv($lines, $delimiter, $enclosure, $head);
 
             unset($array[0]);

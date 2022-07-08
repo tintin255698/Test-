@@ -2,7 +2,7 @@
 
 namespace App\Manager;
 
-class csv
+class CsvManager
 {
     //Open Csv file
     public function openCsv($file):String
@@ -16,7 +16,7 @@ class csv
         // List of delimiters that we will check for
         $delimiters = array(';' => 0,',' => 0,"\t" => 0,"|" => 0);
 
-        // For every delimiter, we count the number of time it can be found within the csv string
+        // For every delimiter, we count the number of time it can be found within the csvManager string
         foreach ($delimiters as $delimiter => &$count) {
             $count = substr_count($csv_string,$delimiter);
         }
@@ -49,10 +49,10 @@ class csv
                 continue;
             }
 
-            // Get the CSV data of the line
+            // Get the CSV dataManager of the line
             $csv = str_getcsv($line, $delimiter, $enclosure);
 
-            // Combine the header and the lines data
+            // Combine the header and the lines dataManager
             $array[] = array_combine($head, $csv);
         }
         return $array;
