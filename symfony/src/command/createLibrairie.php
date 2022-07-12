@@ -2,8 +2,10 @@
 
 namespace App\command;
 
+use App\Entity\Product;
 use App\Manager\CsvManager;
 use App\Manager\DataManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,14 +15,17 @@ class createLibrairie extends Command
 {
     private CsvManager $csv;
 
+    private EntityManagerInterface $entityManager;
+
     private DataManager $data;
 
     private array $array = [];
 
-    public function __construct(CsvManager $csv, DataManager $data)
+    public function __construct(CsvManager $csv, DataManager $data, EntityManagerInterface $entityManager)
     {
         $this->csv = $csv;
         $this->data = $data;
+        $this->entityManager = $entityManager;
         parent::__construct();
     }
 
@@ -101,15 +106,28 @@ class createLibrairie extends Command
     //Execution
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        //Create table
         $table = new Table($output);
         $table
             ->setHeaders(['Sku', 'Status', 'Price', 'Description', 'Created At', 'Slug'])
             ->setRows([
-                [ $this->csv()[1]['sku'], $this->isEnable()[0], $this->price()['0'].$this->csv()[1]['currency'],$this->description()[0],$this->date()[0], $this->slug()[0] ],
+                [ $this->csv()[1]['sku'], $this->isEnable()[0], $this->price()['0'].$this->csv()[1]['currency'],$this->description()[0],$this->date()[0], $this->date()[0]],
                 [ $this->csv()[2]['sku'], $this->isEnable()[1], $this->price()['1'].$this->csv()[2]['currency'],$this->description()[1],$this->date()[1], $this->slug()[1] ],
             ])
         ;
         $table->render();
+
+        //Insert row1 to the BDD
+        $product1 = new Product();
+       $this->data->setData($product1, $this->csv()[1]['sku'], $this->isEnable()[0], $this->price()['0'].$this->csv()[1]['currency'], $this->description()[0], $this->date()[0],  $this->slug()[0]  );
+        $this->entityManager->persist($product1);
+        $this->entityManager->flush();
+
+        //Insert row2 to the BDD
+        $product2 = new Product();
+        $this->data->setData($product2, $this->csv()[2]['sku'], $this->isEnable()[1], $this->price()['1'].$this->csv()[2]['currency'], $this->description()[1], $this->date()[1], $this->slug()[1]  );
+        $this->entityManager->persist($product2);
+        $this->entityManager->flush();
 
         return Command::SUCCESS;
     }

@@ -15,7 +15,6 @@ services:
       MYSQL_ROOT_PASSWORD: Sf_root_password
 
   php:
-    container_name: "php-fpm"
     build:
       context: "./php-fpm"
       args:

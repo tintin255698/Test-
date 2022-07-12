@@ -1,4 +1,4 @@
-FROM php:7.4.16-fpm-alpine3.13
+FROM php:8.1.4-fpm-alpine3.14
 
 ARG UID=${UID}
 ARG GUID=${GUID}

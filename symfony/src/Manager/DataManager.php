@@ -56,6 +56,18 @@ class DataManager
         return $ar;
     }
 
+    //Create function to insert data to BDD
+    public function setData($product, $sku, $enable, $price, $description, $createdAt, $slug ):void
+    {
+        $product->setSku($sku);
+        $product->setStatus($enable);
+        $product->setPrice($price);
+        $product->setDescription($description);
+        $product->setCreatedAt($createdAt);
+        $product->setSlug($slug);
+    }
+
+
 
 
 }
